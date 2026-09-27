@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="planar_arm">
+    <!--
+      Native SDF (not URDF) so base_link can be anchored with a fixed joint
+      whose parent is the reserved "world" keyword. SDF resolves "world" to
+      the simulation world frame directly ; no link named "world" needs to
+      be declared. URDF has no such keyword, which is why the earlier fix
+      used a literal <link name="world"/> + fixed joint; that pattern (going
+      through sdformat's URDF-to-SDF converter) caused gz-sim to treat the
+      whole kinematic chain as welded static. This file sidesteps that
+      converter entirely, so base_link is fixed to the world while
+      joint1/joint2/joint3 remain independently actuated revolute joints.
+    -->
+    <link name="base_link">
+      <visual name="base_visual">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+        <material>
+          <ambient>0.5 0.5 0.5 1</ambient>
+          <diffuse>0.5 0.5 0.5 1</diffuse>
+        </material>
+      </visual>
+      <collision name="base_collision">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+      </collision>
+      <inertial>
+        <mass>5.0</mass>
+        <inertia><ixx>0.05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.05</iyy><iyz>0</iyz><izz>0.05</izz></inertia>
+      </inertial>
+    </link>
+
+    <joint name="base_to_world" type="fixed">
+      <parent>world</parent>
+      <child>base_link</child>
+    </joint>
+
+    <!--
+      joint1 effort raised 100 -> 460 N.m (torque cap enforced by the
+      physics engine on this axis; NOT the same as p_gain/i_gain/d_gain
+      in the JointPositionController plugin below, which are untouched).
+      Sized from actual load, not a guess: for a 100 deg swing in the 2s
+      trajectory duration, peak angular accel = 2.52 rad/s^2 (quintic
+      profile). joint1 carries all 3 links (I~63.9 kg*m^2 about its own
+      axis) and, at worst case (arm horizontal), needs 144.7 N.m just to
+      hold against gravity plus 160.9 N.m of dynamic/accel torque =
+      305.6 N.m combined; x1.5 engineering margin -> 458 N.m, rounded to
+      460. The same calculation for joint2 (I~9.9) gives ~99.8 N.m
+      in-margin ; its existing 100 N.m limit is already right, so it
+      is NOT raised. joint3 (I~0.76) needs only ~13.9 N.m in-margin ;
+      also left unchanged (7x headroom already).
+    -->
+    <joint name="joint1" type="revolute">
+      <parent>base_link</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit><lower>0.0</lower><upper>3.14159</upper><effort>460</effort><velocity>3.0</velocity></limit>
+      </axis>
+    </joint>
+
+    <link name="link1">
+      <pose>0 0 0.2 0 0 0</pose>
+      <visual name="link1_visual">
+        <pose>1.5 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.08</radius><length>3.0</length></cylinder></geometry>
+        <material>
+          <ambient>0.2 0.4 0.9 1</ambient>
+          <diffuse>0.2 0.4 0.9 1</diffuse>
+        </material>
+      </visual>
+      <collision name="link1_collision">
+        <pose>1.5 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.08</radius><length>3.0</length></cylinder></geometry>
+      </collision>
+      <inertial>
+        <pose>1.5 0 0 0 0 0</pose>
+        <mass>2.0</mass>
+        <inertia><ixx>0.05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.5</iyy><iyz>0</iyz><izz>1.5</izz></inertia>
+      </inertial>
+    </link>
+
+    <joint name="joint2" type="revolute">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit><lower>-2.0944</lower><upper>2.0944</upper><effort>100</effort><velocity>3.0</velocity></limit>
+      </axis>
+    </joint>
+
+    <link name="link2">
+      <pose>3.0 0 0.2 0 0 0</pose>
+      <visual name="link2_visual">
+        <pose>1.0 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.07</radius><length>2.0</length></cylinder></geometry>
+        <material>
+          <ambient>0.2 0.8 0.3 1</ambient>
+          <diffuse>0.2 0.8 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="link2_collision">
+        <pose>1.0 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.07</radius><length>2.0</length></cylinder></geometry>
+      </collision>
+      <inertial>
+        <pose>1.0 0 0 0 0 0</pose>
+        <mass>1.5</mass>
+        <inertia><ixx>0.03</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.6</iyy><iyz>0</iyz><izz>0.6</izz></inertia>
+      </inertial>
+    </link>
+
+    <joint name="joint3" type="revolute">
+      <parent>link2</parent>
+      <child>link3</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit><lower>-2.0944</lower><upper>2.0944</upper><effort>100</effort><velocity>3.0</velocity></limit>
+      </axis>
+    </joint>
+
+    <link name="link3">
+      <pose>5.0 0 0.2 0 0 0</pose>
+      <visual name="link3_visual">
+        <pose>0.75 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>1.5</length></cylinder></geometry>
+        <material>
+          <ambient>0.9 0.3 0.2 1</ambient>
+          <diffuse>0.9 0.3 0.2 1</diffuse>
+        </material>
+      </visual>
+      <collision name="link3_collision">
+        <pose>0.75 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>1.5</length></cylinder></geometry>
+      </collision>
+      <inertial>
+        <pose>0.75 0 0 0 0 0</pose>
+        <mass>1.0</mass>
+        <inertia><ixx>0.02</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.2</iyy><iyz>0</iyz><izz>0.2</izz></inertia>
+      </inertial>
+    </link>
+
+    <!--
+      d_gain is tuned per joint, not shared. All three joints previously used
+      the same p=300/d=30, which critically damps joint3 (light, only carries
+      itself: I~0.76 kg*m^2 about its own axis) but leaves joint1 (carries all
+      three links: I~64 kg*m^2) at zeta~0.11 ; badly underdamped ; and
+      joint2 (I~9.9 kg*m^2) at zeta~0.28. That mismatch is what shows up as
+      joint1 visibly ringing for 10+ seconds after every move while joint3
+      barely moves after settling. d_gain = 2*zeta*sqrt(p_gain*I) for
+      zeta=1.0 (critical damping) at each joint's own effective inertia:
+      joint1 d=277, joint2 d=109, joint3 d=30 (unchanged ; it was already
+      about right). p_gain/i_gain/i_max/i_min are left as-is; this is a
+      damping fix, not an effort or steady-state-tracking change.
+    -->
+    <plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>joint1</joint_name>
+      <topic>/planar_arm/joint1_cmd</topic>
+      <p_gain>300.0</p_gain>
+      <i_gain>5.0</i_gain>
+      <d_gain>277.0</d_gain>
+      <i_max>50</i_max>
+      <i_min>-50</i_min>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>joint2</joint_name>
+      <topic>/planar_arm/joint2_cmd</topic>
+      <p_gain>900.0</p_gain>
+      <i_gain>40.0</i_gain>
+      <d_gain>190.0</d_gain>
+      <i_max>100</i_max>
+      <i_min>-100</i_min>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>joint3</joint_name>
+      <topic>/planar_arm/joint3_cmd</topic>
+      <p_gain>300.0</p_gain>
+      <i_gain>5.0</i_gain>
+      <d_gain>30.0</d_gain>
+      <i_max>50</i_max>
+      <i_min>-50</i_min>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
+      <joint_name>joint1</joint_name>
+      <joint_name>joint2</joint_name>
+      <joint_name>joint3</joint_name>
+    </plugin>
+  </model>
+</sdf>

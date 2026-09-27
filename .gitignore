@@ -1,0 +1,10 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.zip
+*.egg-info/
+*.mp4
+.vscode/

@@ -1,0 +1,13 @@
+# Goal
+float64  pick_x
+float64  pick_y
+float64  place_x
+float64  place_y
+
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string status
